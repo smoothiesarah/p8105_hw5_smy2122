@@ -1,0 +1,21 @@
+---
+title: "Homework 5"
+author: "Sarah Younes"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(rvest)
+set.seed(12345)
+```
+
+## Problem 1
+
+## Problem 2
+
+## Problem 3
