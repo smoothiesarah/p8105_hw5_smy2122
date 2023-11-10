@@ -8,13 +8,52 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r load packages and set seed, message = FALSE}
 library(tidyverse)
 library(rvest)
-set.seed(12345)
+set.seed(1)
 ```
 
 ## Problem 1
+
+```{r raw data}
+homicide_data =
+  read.csv("./data/homicide-data.csv")
+```
+
+```{r cleaning data}
+homicide_data =
+  homicide_data |>
+  janitor::clean_names() |>
+  mutate(
+    victim_last = str_to_title(victim_last),
+    victim_first = str_to_title(victim_first)) |>
+  mutate(city_state = paste(city, state, sep = ", "))
+```
+
+```{r date, results = 'hide'}
+homicide_data |>
+  mutate(reported_date = as.Date(reported_date, format = "%Y%m%d"))
+```
+
+```{r city summaries}
+total_homicides =
+  homicide_data |>
+  group_by(city) |>
+  summarize(
+    total_homicides = n())
+
+unresolved_homicides =
+  homicide_data |>
+  filter(disposition == "Closed without arrest" | disposition == "Open/No arrest") |>
+  group_by(city) |>
+  summarize(
+    unresolved_homicides = n())
+
+city_summaries =
+  full_join(total_homicides, unresolved_homicides, by = "city") |>
+  print(n = Inf)
+```
 
 ## Problem 2
 
