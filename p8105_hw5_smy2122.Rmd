@@ -1,7 +1,7 @@
 ---
 title: "Homework 5"
 author: "Sarah Younes"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -56,5 +56,46 @@ city_summaries =
 ```
 
 ## Problem 2
+
+First, I will start with a data frame containing all file names.
+
+```{r file names}
+csv_files =
+  list.files(path = "./data/problem_2", pattern = "\\.csv$", full.names = TRUE)
+
+csv_files_df =
+  csv_files |>
+  tibble()
+```
+
+First, I will create a data frame containing all file names via `list.files` and paths. Then, I will use `purrr::map` to import each csv file into the data frame, and all their data is saved as a new `data` variable in the data frame.
+
+```{r importing data, message = FALSE, warning = FALSE}
+df =
+  tibble(
+    files = list.files("./data/problem_2/", pattern = "\\.csv$"),
+    path = str_c("./data/problem_2/", files)) |>
+  mutate(
+    data = purrr::map(path, read_csv))
+```
+
+Next, I will clean the data to unnest all the weekly data from the `data` variable, create ID and study arm variables,tidy the week variable, set `week` as a numeric value, and select the variables I need.
+
+```{r tidying}
+tidy_df =
+  df |>
+  unnest(cols = c(data)) |>
+  mutate(
+    id = str_extract(files, "\\d+"),
+    arm = str_extract(files, "con|exp")) |>
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    names_prefix = "week_",
+    values_to = "value") |>
+  mutate(
+    week = as.numeric(week)) |>
+  select(id, arm, week, value)
+```
 
 ## Problem 3
