@@ -99,7 +99,7 @@ tidy_df =
   select(id, arm, week, value)
 ```
 
-Now, I will make a spaghetti plot showing the observations for each subject over time by study arm/treatment group (experimental vs. control).
+Now, I will make a spaghetti plot showing the observations for each subject over time by study arm/treatment group (experimental vs. control). Most study participants started around the same values. The control group remained mostly the same over the 8 weeks whereas the experimental arm saw larger improvements, which indicates there was likely not a placebo effect among the control group.
 
 ```{r spaghetti plot}
 tidy_df |>
