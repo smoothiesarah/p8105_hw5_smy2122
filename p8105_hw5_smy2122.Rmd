@@ -8,18 +8,22 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+As always, I will begin by loading the packages I will need for this assignment: tidyverse.
+
 ```{r load packages and set seed, message = FALSE}
 library(tidyverse)
-library(rvest)
-set.seed(1)
 ```
 
 ## Problem 1
+
+First, I will import the data.
 
 ```{r raw data}
 homicide_data =
   read.csv("./data/homicide-data.csv")
 ```
+
+Next, I will clean the data.
 
 ```{r cleaning data}
 homicide_data =
@@ -31,10 +35,7 @@ homicide_data =
   mutate(city_state = paste(city, state, sep = ", "))
 ```
 
-```{r date, results = 'hide'}
-homicide_data |>
-  mutate(reported_date = as.Date(reported_date, format = "%Y%m%d"))
-```
+Now, I will summarize within cities to obtain the total number of homicides and the total number of unsolved homicides, and I will show both of these values for each city.
 
 ```{r city summaries}
 total_homicides =
@@ -96,6 +97,20 @@ tidy_df =
   mutate(
     week = as.numeric(week)) |>
   select(id, arm, week, value)
+```
+
+Now, I will make a spaghetti plot showing the observations for each subject over time by study arm/treatment group (experimental vs. control).
+
+```{r spaghetti plot}
+tidy_df |>
+  ggplot(aes(x = week, y = value, color = id)) +
+  geom_line() +
+  facet_grid(. ~ arm, labeller = labeller(arm = c(con = "Control group", exp = "Experimental group"))) +
+  labs(
+    x = "Week",
+    y = "Observation value",
+    title = "Observations over time by subject ID and treatment group",
+    color = "Subject ID")
 ```
 
 ## Problem 3
