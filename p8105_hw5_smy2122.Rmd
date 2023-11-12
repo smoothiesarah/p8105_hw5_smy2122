@@ -8,10 +8,11 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-As always, I will begin by loading the packages I will need for this assignment: tidyverse.
+As always, I will begin by loading the packages I will need for this assignment: tidyverse. I will also use `set.seed` so that I get the same values in Problem 3 when I generate data sets.
 
 ```{r load packages and set seed, message = FALSE}
 library(tidyverse)
+set.seed(1)
 ```
 
 ## Problem 1
@@ -78,6 +79,8 @@ df =
     path = str_c("./data/problem_2/", files)) |>
   mutate(
     data = purrr::map(path, read_csv))
+
+df
 ```
 
 Next, I will clean the data to unnest all the weekly data from the `data` variable, create ID and study arm variables,tidy the week variable, set `week` as a numeric value, and select the variables I need.
@@ -97,6 +100,8 @@ tidy_df =
   mutate(
     week = as.numeric(week)) |>
   select(id, arm, week, value)
+
+tidy_df
 ```
 
 Now, I will make a spaghetti plot showing the observations for each subject over time by study arm/treatment group (experimental vs. control). Most study participants started around the same values. The control group remained mostly the same over the 8 weeks whereas the experimental arm saw larger improvements, which indicates there was likely not a placebo effect among the control group.
@@ -114,3 +119,27 @@ tidy_df |>
 ```
 
 ## Problem 3
+
+```{r}
+t_test_simulations = function(n = 30, mu = 0, sigma = 5, simulations = 5000) {
+  
+    data =
+      tibble(
+        x = rnorm(n = n, mean = mu, sd = sigma))
+
+    t_test =
+      t.test(data, mean = 0, conf.level = 1 - 0.05) |>
+      broom::tidy()
+    
+  }
+```
+
+```{r}
+output = vector("list", 5000)
+
+for (i in 1:5000) {
+  output[[i]] = t_test_simulations(30)
+}
+
+sim_results = bind_rows(output)
+```
