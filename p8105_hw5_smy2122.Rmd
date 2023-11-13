@@ -8,11 +8,12 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-As always, I will begin by loading the packages I will need for this assignment: tidyverse. I will also use `set.seed` so that I get the same values in Problem 3 when I generate data sets.
+As always, I will begin by loading the packages I will need for this assignment: tidyverse. Then, I will `set.seed` so that I get the same values in Problem 3 when I generate data sets and enhance reproducibility. Additionally, I will set my theme and legend position for my plots.
 
-```{r load packages and set seed, message = FALSE}
+```{r load packages & set seed & set theme, message = FALSE}
 library(tidyverse)
 set.seed(1)
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
 ## Problem 1
@@ -121,7 +122,7 @@ tidy_df |>
 ```{r plot}
 tidy_df |>
   ggplot(aes(x = week, y = value, group = id, color = arm)) +
-  geom_path() +
+  geom_line() +
   facet_grid(. ~ arm, labeller = labeller(arm = c(con = "Control group", exp = "Experimental group"))) +
   labs(
     x = "Week",
@@ -129,31 +130,33 @@ tidy_df |>
     title = "Observations over time by subject ID and treatment group",
     color = "Treatment group")
 ```
-```
 
 ## Problem 3
 
 First, I will create a function that runs a one-sample t-test with n = 30, mu = 0,  sigma = 5, and an alpha level of 0.05.
 
 ```{r t-test simulation}
-t_test_simulations = function(n = 30, mu = 0, sigma = 5) {
-  
+t_test_simulations = function(n = 30, mu = mu, sigma = 5) {
+
     data =
       tibble(
         x = rnorm(n = n, mean = mu, sd = sigma))
 
     t_test =
       t.test(data, mean = mu, conf.level = 1 - 0.05) |>
-      broom::tidy() |>
-      select(estimate, p.value)
+      broom::tidy()
    
-  return(t_test)
-
+  return(
+    tibble(
+      mu = mu,
+      mu_hat = pull(t_test, estimate),
+      p_value = pull(t_test, p.value)))
+    
 }
 
 ## test function
 
-t_test_simulations(n = 20, mu = 0, sigma = 5)
+t_test_simulations(mu = 0)
 ```
 
 Now, I will run the function 5000 times with mu = 0.
@@ -161,13 +164,31 @@ Now, I will run the function 5000 times with mu = 0.
 ```{r}
 output = vector("list", 5000)
 
-for(i in 1:5000) {
+for (i in 1:5000) {
   
   output[[i]] = t_test_simulations(n = 30, mu = 0, sigma = 5)
   
 }
 
-sim_results = bind_rows(output)
+sim_results_mu_0 = bind_rows(output)
+
+sim_results_mu_0
 ```
 
-Now, I will run the function 5000 times with mu = 1:6.
+Now, I will run the function 5000 times with mu = 0:6.
+
+```{r}
+output = vector("list", 35000)
+
+for (u in 0:6) {
+for (i in 1:5000) {
+
+  output[[i]] = t_test_simulations(n = 30, mu = u, sigma = 5)
+  
+}
+}
+
+sim_results_all_mu = bind_rows(output)
+
+sim_results_all_mu
+```
