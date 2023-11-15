@@ -149,7 +149,7 @@ t_test_simulations(mu = 0)
 
 Next, I will run the function 5000 times with mu = 0.
 
-```{r}
+```{r simulation for mu equals 0}
 output = vector("list", 5000)
 
 for (i in 1:5000) {
@@ -165,7 +165,7 @@ sim_results_mu_0
 
 Now, I will run the function 5000 times with mu = 0:6.
 
-```{r}
+```{r simulation for all mu values}
 sim_results_all_mu =
   expand_grid(
     mu_values = 0:6,
@@ -175,7 +175,7 @@ sim_results_all_mu =
   unnest(estimate_df)
 ```
 
-Next, I will make a plot showing the proportion of the number of times the null was rejected on the y-axis and the true value of mu on the x-axis. As the mu value increases, the null is more likely to be rejected, and this effect plateaus when mu = 4. Thus, as the effect size increase, power increases.
+Next, I will make a plot showing the proportion of the number of times the null was rejected on the y-axis and the true value of mu on the x-axis. As the mu value increases, the null is more likely to be rejected, and this effect plateaus when mu = 4. Thus, as the effect size increase, power increases. In other words, larger effect sizes make it easier for a hypothesis test to detect statistically significant differences (p<0.05) between groups and reject the null.
 
 ```{r first plot}
 ## 1 indicates rejecting the null hypothesis, 0 indicates failing to reject the null hypothesis
@@ -192,46 +192,38 @@ sim_results_all_mu |>
   geom_point() +
   geom_line() +
   labs(
-    title = "Proportion of the number of times the null was rejected for each true mu value",
-    x = "Proportion of number of times the null was rejected",
+    title = "Power for each true mu value",
+    x = "Power",
     y = "True mu value")
 ```
 
-Next, I will make two plots. The first will show the average estimate of mu-hat on the y-axis and the true value of mu on the x-axis for all samples, and the second will show the average estimate of mu-hat only in samples for which the null was rejected on the y-axis and the true value of mu on the x-axis.
+Next, I will make two overlayed plots. The first plot (blue) will show the average estimate of mu-hat on the y-axis and the true value of mu on the x-axis for all samples, and the second overlayed plot (purple) will show the average estimate of mu-hat only in samples for which the null was rejected on the y-axis and the true value of mu on the x-axis. The average estimate of mu-hat and the true value of mu equaled one another for each value of mu in all the samples. However, when filtering for only samples in which the null hypothesis wsa rejected, the average estimate of mu-hat and the true value of mu only equaled one another when mu = 0 and mu > 4. This finding is likely because there was lower power at these smaller effect sizes of 1, 2, 3.
 
-```{r}
+```{r second plot}
 all_samples =
   sim_results_all_mu |>
   group_by(mu) |>
   summarize(
-    mean_mu_hat = mean(mu_hat)) |>
-  ggplot(aes(y = mean_mu_hat, x = mu)) +
-  geom_point() +
-  geom_line()
+    mean_mu_hat_all = mean(mu_hat))
 
-all_samples
-```
-
-```{r}
 rejected_samples =
   sim_results_all_mu |>
   filter(p_value < 0.05) |>
   group_by(mu) |>
   summarize(
-    mean_mu_hat = mean(mu_hat)) |>
-  ggplot(aes(y = mean_mu_hat, x = mu)) +
-  geom_point() +
-  geom_line()
+    mean_mu_hat_rejected = mean(mu_hat))
 
-rejected_samples
-```
+plot_df =
+  full_join(all_samples, rejected_samples, by = "mu") |>
+  ggplot(aes(x = mu)) +
+  geom_line(aes(y = mean_mu_hat_all), color = "blue") +
+  geom_point(aes(y = mean_mu_hat_all), color = "blue") +
+  geom_line(aes(y = mean_mu_hat_rejected), color = "purple") +
+  geom_point(aes(y = mean_mu_hat_rejected), color = "purple") +
+  labs(
+    x = "True mu value",
+    y = "Average estimate of mu-hat",
+    title = "Average estimate of mu-hat for all samples (blue) and rejected samples (purple)")
 
-```{r}
-sim_results_all_mu |>
-  group_by(mu) |>
-  summarize(mean_mu_hat = mean(mu_hat)) |>
-  ungroup() |>
-  filter(p_value < 0.05) |>
-  group_by(mu) |>
-  summarize(mean_mu_hat = mean(mu_hat))
+plot_df
 ```
