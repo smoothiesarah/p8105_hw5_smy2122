@@ -105,7 +105,7 @@ tidy_df =
 tidy_df
 ```
 
-Now, I will make a spaghetti plot showing the observations for each subject over time by study arm/treatment group (experimental vs. control). Most study participants started around the same values. The control group remained mostly the same but trended slightly downward over the 8-week period whereas the experimental group saw larger improvements, which indicates there was likely not a placebo effect among the control group. Some participants in the control group showed large fluctuations in observation value over the 8-week period.
+Now, I will make a spaghetti plot showing the observations for each subject over time by study arm/treatment group (experimental vs. control). Most study participants started around the same values. The control group remained mostly the same but trended slightly downward over the 8-week period whereas the experimental group saw larger improvements, which indicates there was likely not a placebo effect among the control group since between-group differences were noticeable. Some participants in the control group showed large fluctuations in observation value over the 8-week period.
 
 ```{r spaghetti plot}
 tidy_df |>
@@ -124,14 +124,14 @@ tidy_df |>
 First, I will create a function that runs a one-sample t-test with n = 30, mu = 0,  sigma = 5, and an alpha level of 0.05.
 
 ```{r t-test simulation}
-t_test_simulations = function(n = 30, mu = mu, sigma = 5) {
+t_test_simulations = function(n = 30, mu = mu, sd = 5) {
 
     data =
       tibble(
-        x = rnorm(n = n, mean = mu, sd = sigma))
+        x = rnorm(n = 30, mean = mu, sd = 5))
     
     t_test =
-      t.test(data, mean = mu, conf.level = 1 - 0.05) |>
+      t.test(pull(data, x), mean = 0, conf.level = 1 - 0.05) |>
       broom::tidy()
    
   return(
@@ -154,7 +154,7 @@ output = vector("list", 5000)
 
 for (i in 1:5000) {
   
-  output[[i]] = t_test_simulations(n = 30, mu = 0, sigma = 5)
+  output[[i]] = t_test_simulations(n = 30, mu = 0, sd = 5)
   
 }
 
@@ -167,55 +167,71 @@ Now, I will run the function 5000 times with mu = 0:6.
 
 ```{r}
 sim_results_all_mu =
-  tibble(
-    mu = 0:6) |>
+  expand_grid(
+    mu_values = 0:6,
+    iter = 1:5000) |>
   mutate(
-    output_list = map(mu, ~rerun(5000, t_test_simulations(n = 30, mu))),
-    estimate_df = map(output_list, bind_rows)) |>
-  select(-output_list) |>
-  unnest()
-
-sim_results_all_mu
+    estimate_df = pmap(list(n = 30, mu = mu_values), t_test_simulations)) |>
+  unnest(estimate_df)
 ```
 
-Next, I will make a plot showing the proportion of the number of times the null was rejected on the y-axis and the true value of mu on the x-axis.
+Next, I will make a plot showing the proportion of the number of times the null was rejected on the y-axis and the true value of mu on the x-axis. As the mu value increases, the null is more likely to be rejected, and this effect plateaus when mu = 4. Thus, as the effect size increase, power increases.
 
-```{r}
+```{r first plot}
+## 1 indicates rejecting the null hypothesis, 0 indicates failing to reject the null hypothesis
+
 sim_results_all_mu |>
   mutate(
-    null = p_value<0.05) |>
+    null_rejected = case_when(
+      p_value < 0.05 ~ 1,
+      p_value >= 0.05 ~ 0)) |>
   group_by(mu) |>
   summarize(
-    ratio = sum(null)/n())
+    proportion = sum(null_rejected)/n()) |>
+  ggplot(aes(x = mu, y = proportion)) +
+  geom_point() +
+  geom_line() +
+  labs(
+    title = "Proportion of the number of times the null was rejected for each true mu value",
+    x = "Proportion of number of times the null was rejected",
+    y = "True mu value")
+```
+
+Next, I will make two plots. The first will show the average estimate of mu-hat on the y-axis and the true value of mu on the x-axis for all samples, and the second will show the average estimate of mu-hat only in samples for which the null was rejected on the y-axis and the true value of mu on the x-axis.
+
+```{r}
+all_samples =
+  sim_results_all_mu |>
+  group_by(mu) |>
+  summarize(
+    mean_mu_hat = mean(mu_hat)) |>
+  ggplot(aes(y = mean_mu_hat, x = mu)) +
+  geom_point() +
+  geom_line()
+
+all_samples
 ```
 
 ```{r}
-sim_results_all_mu |>
-  group_by(mu) |>
-  summarize(
-    power = mean(p_value))
-```
-
-```{r}
-sim_results_all_mu |>
-  group_by(mu) |>
-  mutate(
-    power = mean(p_value)) |>
-  summarize(
-    proportion = sum(power)/n())
-```
-
-Next, I will make two plots. The first will show the average estimate of mu-hat on the y-axis and the true value of mu on the x-axis, and the second will show the average estimate of mu-hat only in samples for which the null was rejected on the y-axis and the true value of mu on the x-axis.
-
-```{r}
-sim_results_all_mu |>
-  group_by(mu) |>
-  summarize(
-    power = mean(mu_hat))
-
-sim_results_all_mu |>
+rejected_samples =
+  sim_results_all_mu |>
   filter(p_value < 0.05) |>
   group_by(mu) |>
   summarize(
-    power = mean(mu_hat))
+    mean_mu_hat = mean(mu_hat)) |>
+  ggplot(aes(y = mean_mu_hat, x = mu)) +
+  geom_point() +
+  geom_line()
+
+rejected_samples
+```
+
+```{r}
+sim_results_all_mu |>
+  group_by(mu) |>
+  summarize(mean_mu_hat = mean(mu_hat)) |>
+  ungroup() |>
+  filter(p_value < 0.05) |>
+  group_by(mu) |>
+  summarize(mean_mu_hat = mean(mu_hat))
 ```
